@@ -1,142 +1,148 @@
-// Основні змінні
-let words = [];
+let allWords = []; // Повний список із файлу
+let wordsToLearn = []; // Тільки ті, що залишилися
 let currentIndex = 0;
-const synth = window.speechSynthesis; // API озвучування
+const synth = window.speechSynthesis;
 
 /**
- * 1. Завантаження словника з JSON
+ * 1. Завантаження словника
  */
 async function loadWords() {
     try {
-        // Використовуємо ./ для чіткого вказання поточної папки
         const response = await fetch('./words.json?v=' + new Date().getTime());
+        if (!response.ok) throw new Error("JSON не знайдено");
+        allWords = await response.json();
         
-        if (!response.ok) {
-            throw new Error(`Помилка сервера: ${response.status} ${response.statusText}`);
-        }
-        
-        words = await response.json();
-        
-        if (words.length === 0) {
-            throw new Error("Масив слів порожній");
-        }
-
         initApp();
     } catch (error) {
-        console.error("Помилка:", error);
-        // Виводимо текст помилки на саму картку для діагностики
         document.getElementById('txt-eng').innerText = "Помилка!";
         document.getElementById('txt-ukr').innerText = error.message;
     }
 }
 
 /**
- * 2. Ініціалізація та закладка
+ * 2. Фільтрація вивчених слів та ініціалізація
  */
 function initApp() {
-    // Шукаємо в пам'яті телефону ID останнього слова
-    const savedId = localStorage.getItem('lastWordId_AZ');
+    // Отримуємо список ID вивчених слів
+    const learnedIds = JSON.parse(localStorage.getItem('learnedWords_AZ') || "[]");
     
-    if (savedId) {
-        // Знаходимо індекс слова за його ID
-        const foundIndex = words.findIndex(w => w.id == savedId);
-        // Якщо знайшли — використовуємо, інакше — 0 (початок)
-        currentIndex = foundIndex !== -1 ? foundIndex : 0;
-    } else {
-        currentIndex = 0; // Якщо пам'ять порожня
+    // Залишаємо лише ті слова, ID яких немає в списку вивчених
+    wordsToLearn = allWords.filter(word => !learnedIds.includes(word.id));
+
+    if (wordsToLearn.length === 0) {
+        showFinishScreen();
+        return;
     }
+
+    // Відновлюємо останню позицію (закладку)
+    const savedId = localStorage.getItem('lastWordId_AZ');
+    const foundIndex = wordsToLearn.findIndex(w => w.id == savedId);
+    currentIndex = foundIndex !== -1 ? foundIndex : 0;
     
-    renderCard(); // Відображаємо картку
+    renderCard();
 }
 
 /**
- * 3. Відображення даних на картці
+ * 3. Функція "Вивчено" (Назавжди)
+ */
+function markAsLearned() {
+    if (wordsToLearn.length === 0) return;
+
+    const currentWord = wordsToLearn[currentIndex];
+    
+    // 1. Додаємо ID у список вивчених в localStorage
+    const learnedIds = JSON.parse(localStorage.getItem('learnedWords_AZ') || "[]");
+    if (!learnedIds.includes(currentWord.id)) {
+        learnedIds.push(currentWord.id);
+        localStorage.setItem('learnedWords_AZ', JSON.stringify(learnedIds));
+    }
+
+    // Візуальний ефект
+    const card = document.getElementById('card');
+    card.style.boxShadow = "0 0 40px rgba(52, 168, 83, 0.8)";
+
+    setTimeout(() => {
+        // 2. Видаляємо з поточного масиву
+        wordsToLearn.splice(currentIndex, 1);
+
+        if (wordsToLearn.length === 0) {
+            showFinishScreen();
+        } else {
+            if (currentIndex >= wordsToLearn.length) currentIndex = 0;
+            card.style.boxShadow = "0 10px 30px rgba(0,0,0,0.1)";
+            renderCard();
+        }
+    }, 300);
+}
+
+/**
+ * 4. Відображення картки
  */
 function renderCard() {
-    if (words.length === 0) return;
+    if (wordsToLearn.length === 0) return;
 
-    // Скидаємо обертання картки (показуємо передню сторону)
     document.getElementById('card').classList.remove('is-flipped');
+    const currentWord = wordsToLearn[currentIndex];
 
-    const currentWord = words[currentIndex];
-
-    // Оновлюємо текст
     document.getElementById('txt-eng').innerText = currentWord.eng;
     document.getElementById('txt-ukr').innerText = currentWord.ukr;
-    
-    // Оновлюємо прогрес (зверху)
-    document.getElementById('progress').innerText = `Слово ${currentIndex + 1} із ${words.length}`;
+    document.getElementById('progress').innerText = `Залишилось: ${wordsToLearn.length} із ${allWords.length}`;
 
-    // Автоматичний підбір малюнка з loremflickr (350x450, random=id)
     const imgElement = document.getElementById('img-front');
-    // Обробка для слів із кількох частин (беремо перше слово)
     const firstWord = currentWord.eng.split(' ')[0];
     imgElement.src = `https://loremflickr.com/350/450/${encodeURIComponent(firstWord)}?random=${currentWord.id}`;
 
-    // Зберігаємо закладку в пам'ять телефону
+    // Зберігаємо закладку (щоб знати, де зупинилися)
     localStorage.setItem('lastWordId_AZ', currentWord.id);
-
-    // Автоматично озвучуємо англійське слово при появі
     speak(currentWord.eng);
 }
 
 /**
- * 4. Логіка обертання картки (Tap)
+ * 5. Екран завершення
  */
+function showFinishScreen() {
+    document.getElementById('txt-eng').innerText = "🎉 Готово!";
+    document.getElementById('txt-ukr').innerText = "Ви вивчили всі слова зі списку!";
+    document.getElementById('progress').innerText = "100% виконано";
+    document.getElementById('img-front').src = "https://loremflickr.com/350/450/success?random=1";
+}
+
+/**
+ * Додатково: Скидання всієї статистики (якщо захочете почати з нуля)
+ */
+function resetProgress() {
+    if (confirm("Це видалить весь прогрес і поверне всі 1000 слів. Продовжити?")) {
+        localStorage.removeItem('learnedWords_AZ');
+        localStorage.removeItem('lastWordId_AZ');
+        location.reload();
+    }
+}
+
+// Решта функцій (flipCard, nextWord, prevWord, speak) залишаються без змін
 function flipCard() {
     const card = document.getElementById('card');
     card.classList.toggle('is-flipped');
-    
-    // Якщо картку повернули назад до англійської, озвучуємо знову
-    if (!card.classList.contains('is-flipped')) {
-        speak(words[currentIndex].eng);
-    }
+    if (!card.classList.contains('is-flipped')) speak(wordsToLearn[currentIndex].eng);
 }
 
-/**
- * 5. Функція Озвучування (SpeechSynthesis)
- */
-function speak(text) {
-    // Якщо телефон вже говорить, скасовуємо попередню мову
-    if (synth.speaking) synth.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US'; // Американська англійська
-    utterance.rate = 0.9;     // Трохи повільніше (для навчання)
-    synth.speak(utterance);
-}
-
-/**
- * 6. Навігація
- */
 function nextWord() {
-    if (currentIndex < words.length - 1) {
-        currentIndex++;
-        renderCard();
-    } else {
-        // Якщо дійшли до кінця, озвучуємо "Вітаємо"
-        speak("Congratulations! You finished the list.");
-        alert("🎉 Ви пройшли весь список!");
-    }
+    if (wordsToLearn.length <= 1) return;
+    currentIndex = (currentIndex + 1) % wordsToLearn.length;
+    renderCard();
 }
 
 function prevWord() {
-    if (currentIndex > 0) {
-        currentIndex--;
-        renderCard();
-    }
+    if (wordsToLearn.length <= 1) return;
+    currentIndex = (currentIndex - 1 + wordsToLearn.length) % wordsToLearn.length;
+    renderCard();
 }
 
-/**
- * 7. Скидання прогресу
- */
-function resetProgress() {
-    if (confirm("Видалити закладку і почати з 1-го слова?")) {
-        localStorage.removeItem('lastWordId_AZ');
-        currentIndex = 0;
-        renderCard();
-    }
+function speak(text) {
+    if (synth.speaking) synth.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9;
+    synth.speak(utterance);
 }
 
-// Запуск після повного завантаження DOM
 window.addEventListener('load', loadWords);
