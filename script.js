@@ -8,22 +8,25 @@ const synth = window.speechSynthesis; // API озвучування
  */
 async function loadWords() {
     try {
-        // fetch з параметром часу, щоб уникнути кешування на мобільному
-        const response = await fetch('words.json?v=' + new Date().getTime());
-        if (!response.ok) throw new Error("JSON не знайдено");
+        // Використовуємо ./ для чіткого вказання поточної папки
+        const response = await fetch('./words.json?v=' + new Date().getTime());
+        
+        if (!response.ok) {
+            throw new Error(`Помилка сервера: ${response.status} ${response.statusText}`);
+        }
+        
         words = await response.json();
         
-        // Перевіряємо, чи є слова
         if (words.length === 0) {
-            document.getElementById('txt-eng').innerText = "JSON порожній";
-            return;
+            throw new Error("Масив слів порожній");
         }
 
-        console.log(`Завантажено слів: ${words.length}`);
-        initApp(); // Запускаємо додаток
+        initApp();
     } catch (error) {
         console.error("Помилка:", error);
-        document.getElementById('txt-eng').innerText = "Помилка JSON";
+        // Виводимо текст помилки на саму картку для діагностики
+        document.getElementById('txt-eng').innerText = "Помилка!";
+        document.getElementById('txt-ukr').innerText = error.message;
     }
 }
 
