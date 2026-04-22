@@ -2,258 +2,104 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>English Cards</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Англійський словник (A-Z)</title>
     <style>
-        :root {
-            --bg-color: #f8f9fa;
-            --card-white: #ffffff;
-            --text-main: #2d3436;
-            --accent-blue: #0984e3;
-            --accent-green: #00b894;
-            --accent-orange: #fdcb6e;
-        }
-
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
+            font-family: sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
-            overflow: hidden;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        /* Контейнер картки */
-        .scene {
-            width: 90vw;
-            max-width: 350px;
-            height: 480px;
-            perspective: 1000px;
+            margin: 0;
+            background-color: #f0f2f5;
         }
 
         .card {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-style: preserve-3d;
-            cursor: pointer;
-        }
-
-        .card.is-flipped {
-            transform: rotateY(180deg);
-        }
-
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            background: white;
+            padding: 30px;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            background: var(--card-white);
-            padding: 20px;
-            box-sizing: border-box;
-            text-align: center;
-        }
-
-        .card-face-back {
-            transform: rotateY(180deg);
-            background-color: #f1f9ff;
-        }
-
-        /* Зображення та текст */
-        .card-img {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            background: #eee;
-        }
-
-        .word-eng {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: var(--text-main);
-            margin: 0;
-        }
-
-        .word-ukr {
-            font-size: 1.8rem;
-            color: var(--accent-blue);
-            font-weight: 600;
-        }
-
-        /* Кнопка звуку */
-        .speaker-icon {
-            margin-top: 15px;
-            font-size: 2rem;
-            color: var(--accent-blue);
-        }
-
-        /* Кнопки керування */
-        .controls {
-            margin-top: 30px;
-            display: flex;
-            gap: 20px;
-        }
-
-        .btn {
-            border: none;
-            padding: 15px 25px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
         }
 
-        .btn-learned { background-color: var(--accent-orange); }
-        .btn-next { background-color: var(--accent-green); }
+        #word-eng {
+            font-size: 42px;
+            margin: 0;
+            color: #1a73e8;
+            text-transform: capitalize;
+        }
 
-        .status-msg {
-            display: none;
-            text-align: center;
-            padding: 20px;
+        #word-ukr {
+            font-size: 24px;
+            color: #5f6368;
+            margin: 10px 0 20px;
+            min-height: 1.2em;
+        }
+
+        #progress {
+            font-size: 14px;
+            color: #9aa0a6;
+            margin-bottom: 25px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 15px 25px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-prev {
+            background-color: #dadce0;
+            color: #3c4043;
+        }
+
+        .btn-next {
+            background-color: #1a73e8;
+            color: white;
+            flex-grow: 1;
+        }
+
+        .btn-reset {
+            background: none;
+            color: #9aa0a6;
+            font-size: 12px;
+            margin-top: 30px;
+            text-decoration: underline;
+        }
+
+        button:active {
+            opacity: 0.8;
+            transform: scale(0.98);
         }
     </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <div class="scene">
-            <div class="card" id="card" onclick="handleCardClick()">
-                <div class="card-face card-face-front">
-                    <img id="img-front" src="" class="card-img" alt="loading...">
-                    <p id="txt-eng" class="word-eng"></p>
-                    <div class="speaker-icon">🔊</div>
-                </div>
-                <div class="card-face card-face-back">
-                    <p id="txt-ukr" class="word-ukr"></p>
-                    <p style="color: #95a5a6;">(натисніть, щоб повернути)</p>
-                </div>
-            </div>
-        </div>
-
+    <div class="card">
+        <div id="progress">Завантаження...</div>
+        <h1 id="word-eng">---</h1>
+        <p id="word-ukr">Завантаження словника...</p>
+        
         <div class="controls">
-            <button class="btn btn-learned" onclick="markAsLearned()">✔ Вивчено</button>
-            <button class="btn btn-next" onclick="nextCard()">Далі ➔</button>
+            <button class="btn-prev" onclick="prevWord()">Назад</button>
+            <button class="btn-next" onclick="nextWord()">Вперед</button>
         </div>
+
+        <button class="btn-reset" onclick="resetProgress()">Почати спочатку</button>
     </div>
 
-    <div id="finish-msg" class="status-msg">
-        <h2>🎉 Всі слова пройдено!</h2>
-        <button class="btn btn-next" onclick="resetProgress()" style="margin: 0 auto;">Почати спочатку</button>
-    </div>
-
-    <script>
-        // Головні змінні
-        let words = [];
-        let currentIndex = 0;
-        
-        // Елементи DOM (переконайтеся, що у вас є елементи з такими ID в HTML)
-        const engElement = document.getElementById('word-eng');
-        const ukrElement = document.getElementById('word-ukr');
-        const progressElement = document.getElementById('progress');
-        
-        /**
-         * Завантаження слів із файлу words.json
-         */
-        async function loadWords() {
-            try {
-                const response = await fetch('words.json');
-                words = await response.json();
-                
-                // Ініціалізація прогресу після завантаження даних
-                initApp();
-            } catch (error) {
-                console.error("Помилка завантаження словника:", error);
-                engElement.innerText = "Помилка завантаження JSON";
-            }
-        }
-        
-        /**
-         * Ініціалізація додатка та перевірка закладки
-         */
-        function initApp() {
-            // Отримуємо збережений ID слова з пам'яті телефону
-            const savedId = localStorage.getItem('lastWordId');
-            
-            if (savedId) {
-                // Шукаємо індекс слова за його ID
-                const foundIndex = words.findIndex(w => w.id == savedId);
-                currentIndex = foundIndex !== -1 ? foundIndex : 0;
-            } else {
-                currentIndex = 0;
-            }
-            
-            updateDisplay();
-        }
-        
-        /**
-         * Оновлення тексту на екрані та збереження закладки
-         */
-        function updateDisplay() {
-            if (words.length === 0) return;
-        
-            const currentWord = words[currentIndex];
-            
-            // Вивід на екран
-            engElement.innerText = currentWord.eng;
-            ukrElement.innerText = currentWord.ukr;
-            progressElement.innerText = `Слово ${currentIndex + 1} із ${words.length} (ID: ${currentWord.id})`;
-        
-            // Автоматичне збереження закладки (ID поточного слова)
-            localStorage.setItem('lastWordId', currentWord.id);
-        }
-        
-        /**
-         * Навігація: Наступне слово
-         */
-        function nextWord() {
-            if (currentIndex < words.length - 1) {
-                currentIndex++;
-                updateDisplay();
-            }
-        }
-        
-        /**
-         * Навігація: Попереднє слово
-         */
-        function prevWord() {
-            if (currentIndex > 0) {
-                currentIndex--;
-                updateDisplay();
-            }
-        }
-        
-        /**
-         * Скидання прогресу
-         */
-        function resetProgress() {
-            if (confirm("Почати вивчення з першого слова?")) {
-                localStorage.removeItem('lastWordId');
-                currentIndex = 0;
-                updateDisplay();
-            }
-        }
-        
-        // Запуск при завантаженні сторінки
-        document.addEventListener('DOMContentLoaded', loadWords);
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
