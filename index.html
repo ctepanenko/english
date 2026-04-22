@@ -2,103 +2,204 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Англійський словник (A-Z)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Flashcards A-Z</title>
     <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-white: #ffffff;
+            --text-main: #2d3436;
+            --accent-blue: #1a73e8;
+            --accent-green: #34a853;
+            --accent-gray: #dadce0;
+        }
+
         body {
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
             margin: 0;
-            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent; /* Прибирає синє виділення при tap на Android */
+        }
+
+        /* Контейнер для прогресу (зверху) */
+        #progress {
+            font-size: 16px;
+            color: #5f6368;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        /* 1. Сцена та Картка (Логіка обертання) */
+        .scene {
+            width: 90vw;
+            max-width: 380px;
+            height: 500px; /* Висота картки */
+            perspective: 1000px; /* Створює 3D простір */
+            cursor: pointer;
         }
 
         .card {
-            background: white;
-            padding: 30px;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d; /* Важливо для 3D */
             border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            width: 90%;
-            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
-        #word-eng {
-            font-size: 42px;
+        /* Стан при натисканні (додається через JS) */
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        /* Спільні стилі для обох сторін */
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* Ховає задню сторону */
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            background: var(--card-white);
+            padding: 25px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        /* 2. Передня сторона (Англійська + Малюнок) */
+        .card-face-front {
+            z-index: 2; /* Передній план за замовчуванням */
+        }
+
+        .card-img {
+            width: 100%;
+            height: 280px; /* Фіксована висота малюнка */
+            object-fit: cover; /* Малюнок заповнює простір без деформації */
+            border-radius: 15px;
+            margin-bottom: 25px;
+            background: #eee; /* Фон, поки вантажиться */
+        }
+
+        .word-eng {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-main);
             margin: 0;
-            color: #1a73e8;
             text-transform: capitalize;
         }
 
-        #word-ukr {
-            font-size: 24px;
-            color: #5f6368;
-            margin: 10px 0 20px;
-            min-height: 1.2em;
+        .speaker-icon {
+            font-size: 1.8rem;
+            color: var(--accent-blue);
+            margin-top: 10px;
         }
 
-        #progress {
-            font-size: 14px;
+        /* 3. Задня сторона (Переклад) */
+        .card-face-back {
+            transform: rotateY(180deg); /* Початково повернута */
+            background-color: #f8f9fa;
+        }
+
+        .word-ukr {
+            font-size: 2.2rem;
+            color: var(--accent-blue);
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .hint {
             color: #9aa0a6;
-            margin-bottom: 25px;
+            margin-top: 20px;
+            font-size: 14px;
         }
 
+        /* 4. Кнопки Керування (знизу) */
         .controls {
+            margin-top: 30px;
             display: flex;
-            gap: 10px;
-            justify-content: center;
+            gap: 15px;
+            width: 90vw;
+            max-width: 380px;
         }
 
-        button {
-            padding: 15px 25px;
-            font-size: 18px;
+        .btn {
             border: none;
-            border-radius: 10px;
+            padding: 18px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: opacity 0.2s, transform 0.1s;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+            transform: scale(0.97);
         }
 
         .btn-prev {
-            background-color: #dadce0;
-            color: #3c4043;
+            background-color: var(--accent-gray);
+            color: var(--text-main);
+            width: 35%;
         }
 
         .btn-next {
-            background-color: #1a73e8;
+            background-color: var(--accent-blue);
             color: white;
-            flex-grow: 1;
+            flex-grow: 1; /* Займає решту простору */
         }
 
+        /* Кнопка скидання (прихована знизу) */
         .btn-reset {
             background: none;
             color: #9aa0a6;
             font-size: 12px;
-            margin-top: 30px;
+            margin-top: 25px;
             text-decoration: underline;
-        }
-
-        button:active {
-            opacity: 0.8;
-            transform: scale(0.98);
+            padding: 5px;
         }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <div id="progress">Завантаження...</div>
-        <h1 id="word-eng">---</h1>
-        <p id="word-ukr">Завантаження словника...</p>
-        
-        <div class="controls">
-            <button class="btn-prev" onclick="prevWord()">Назад</button>
-            <button class="btn-next" onclick="nextWord()">Вперед</button>
-        </div>
+    <div id="progress">Завантаження...</div>
 
-        <button class="btn-reset" onclick="resetProgress()">Почати спочатку</button>
+    <div class="scene" onclick="flipCard()">
+        <div class="card" id="card">
+            
+            <div class="card-face card-face-front">
+                <img id="img-front" src="" class="card-img" alt="loading image...">
+                <p id="txt-eng" class="word-eng">---</p>
+                <div class="speaker-icon">🔊</div>
+            </div>
+
+            <div class="card-face card-face-back">
+                <p id="txt-ukr" class="word-ukr">---</p>
+                <p class="hint">(tap, щоб повернути)</p>
+            </div>
+            
+        </div>
     </div>
+
+    <div class="controls">
+        <button class="btn btn-prev" onclick="prevWord()">Назад</button>
+        <button class="btn btn-next" onclick="nextWord()">Далі ➔</button>
+    </div>
+
+    <button class="btn btn-reset" onclick="resetProgress()">Почати спочатку</button>
 
     <script src="script.js"></script>
 </body>
