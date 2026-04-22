@@ -171,6 +171,13 @@
             text-decoration: underline;
             padding: 5px;
         }
+        .btn-learned {
+        background-color: var(--accent-green);
+        color: white;
+        margin-top: 10px;
+        width: 100%;
+        display: block;
+        }
     </style>
 </head>
 <body>
@@ -194,9 +201,10 @@
         </div>
     </div>
 
-    <div class="controls">
+    <div class="controls" style="flex-wrap: wrap;">
         <button class="btn btn-prev" onclick="prevWord()">Назад</button>
         <button class="btn btn-next" onclick="nextWord()">Далі ➔</button>
+        <button class="btn btn-learned" onclick="markAsLearned()">✔ Вивчено</button>
     </div>
 
     <button class="btn btn-reset" onclick="resetProgress()">Почати спочатку</button>
