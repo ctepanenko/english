@@ -1,66 +1,50 @@
-// Головні змінні
 let words = [];
 let currentIndex = 0;
 
-// Елементи DOM (переконайтеся, що у вас є елементи з такими ID в HTML)
-const engElement = document.getElementById('word-eng');
-const ukrElement = document.getElementById('word-ukr');
-const progressElement = document.getElementById('progress');
-
-/**
- * Завантаження слів із файлу words.json
- */
 async function loadWords() {
     try {
-        const response = await fetch('words.json');
-        words = await response.json();
+        // Додаємо випадковий параметр, щоб браузер не кешував старий файл
+        const response = await fetch('words.json?v=' + new Date().getTime());
+        if (!response.ok) throw new Error("Файл words.json не знайдено");
         
-        // Ініціалізація прогресу після завантаження даних
+        words = await response.json();
+        console.log("Слова завантажено:", words.length);
+        
         initApp();
     } catch (error) {
-        console.error("Помилка завантаження словника:", error);
-        engElement.innerText = "Помилка завантаження JSON";
+        console.error("Помилка:", error);
+        const engElem = document.getElementById('word-eng');
+        if (engElem) engElem.innerText = "Помилка завантаження JSON";
     }
 }
 
-/**
- * Ініціалізація додатка та перевірка закладки
- */
 function initApp() {
-    // Отримуємо збережений ID слова з пам'яті телефону
     const savedId = localStorage.getItem('lastWordId');
     
-    if (savedId) {
-        // Шукаємо індекс слова за його ID
+    if (savedId && words.length > 0) {
         const foundIndex = words.findIndex(w => w.id == savedId);
         currentIndex = foundIndex !== -1 ? foundIndex : 0;
-    } else {
-        currentIndex = 0;
     }
     
     updateDisplay();
 }
 
-/**
- * Оновлення тексту на екрані та збереження закладки
- */
 function updateDisplay() {
-    if (words.length === 0) return;
+    const engElement = document.getElementById('word-eng');
+    const ukrElement = document.getElementById('word-ukr');
+    const progressElement = document.getElementById('progress');
+
+    if (!engElement || !ukrElement || words.length === 0) return;
 
     const currentWord = words[currentIndex];
     
-    // Вивід на екран
     engElement.innerText = currentWord.eng;
     ukrElement.innerText = currentWord.ukr;
-    progressElement.innerText = `Слово ${currentIndex + 1} із ${words.length} (ID: ${currentWord.id})`;
+    progressElement.innerText = `Слово ${currentIndex + 1} із ${words.length}`;
 
-    // Автоматичне збереження закладки (ID поточного слова)
     localStorage.setItem('lastWordId', currentWord.id);
 }
 
-/**
- * Навігація: Наступне слово
- */
 function nextWord() {
     if (currentIndex < words.length - 1) {
         currentIndex++;
@@ -68,9 +52,6 @@ function nextWord() {
     }
 }
 
-/**
- * Навігація: Попереднє слово
- */
 function prevWord() {
     if (currentIndex > 0) {
         currentIndex--;
@@ -78,16 +59,13 @@ function prevWord() {
     }
 }
 
-/**
- * Скидання прогресу
- */
 function resetProgress() {
-    if (confirm("Почати вивчення з першого слова?")) {
+    if (confirm("Почати спочатку?")) {
         localStorage.removeItem('lastWordId');
         currentIndex = 0;
         updateDisplay();
     }
 }
 
-// Запуск при завантаженні сторінки
-document.addEventListener('DOMContentLoaded', loadWords);
+// Чекаємо повного завантаження DOM
+window.addEventListener('load', loadWords);
