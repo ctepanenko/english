@@ -1,0 +1,14 @@
+[
+  { "id": 1, "eng": "Alone", "ukr": "Самотній" },
+  { "id": 2, "eng": "Still", "ukr": "Все ще" },
+  { "id": 3, "eng": "By my side", "ukr": "Поруч зі мною" },
+  { "id": 4, "eng": "Fall in love", "ukr": "Закохатися" },
+  { "id": 5, "eng": "Without", "ukr": "Без" },
+  { "id": 6, "eng": "Life", "ukr": "Життя" },
+  { "id": 7, "eng": "God", "ukr": "Бог" },
+  { "id": 8, "eng": "Go on", "ukr": "Продовжувати" },
+  { "id": 9, "eng": "Nature", "ukr": "Природа" },
+  { "id": 10, "eng": "Family", "ukr": "Сім'я" },
+  { "id": 11, "eng": "Hide", "ukr": "Ховати" },
+  { "id": 12, "eng": "Cloud", "ukr": "Хмара" }
+]
