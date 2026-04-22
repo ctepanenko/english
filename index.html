@@ -161,94 +161,99 @@
     </div>
 
     <script>
-        let vocabulary = [];
-        let filteredVocab = [];
+        // Головні змінні
+        let words = [];
         let currentIndex = 0;
-        const synth = window.speechSynthesis;
-
-        // 1. Завантаження даних з JSON
-        async function loadData() {
+        
+        // Елементи DOM (переконайтеся, що у вас є елементи з такими ID в HTML)
+        const engElement = document.getElementById('word-eng');
+        const ukrElement = document.getElementById('word-ukr');
+        const progressElement = document.getElementById('progress');
+        
+        /**
+         * Завантаження слів із файлу words.json
+         */
+        async function loadWords() {
             try {
                 const response = await fetch('words.json');
-                if (!response.ok) throw new Error('JSON не знайдено');
-                vocabulary = await response.json();
-                startApp();
-            } catch (err) {
-                alert('Помилка завантаження words.json. Перевірте файл.');
-                console.error(err);
+                words = await response.json();
+                
+                // Ініціалізація прогресу після завантаження даних
+                initApp();
+            } catch (error) {
+                console.error("Помилка завантаження словника:", error);
+                engElement.innerText = "Помилка завантаження JSON";
             }
         }
-
-        function startApp() {
-            const learnedIds = JSON.parse(localStorage.getItem('learnedWords') || '[]');
-            filteredVocab = vocabulary.filter(w => !learnedIds.includes(w.id));
-
-            if (filteredVocab.length === 0) {
-                document.getElementById('game-container').style.display = 'none';
-                document.getElementById('finish-msg').style.display = 'block';
+        
+        /**
+         * Ініціалізація додатка та перевірка закладки
+         */
+        function initApp() {
+            // Отримуємо збережений ID слова з пам'яті телефону
+            const savedId = localStorage.getItem('lastWordId');
+            
+            if (savedId) {
+                // Шукаємо індекс слова за його ID
+                const foundIndex = words.findIndex(w => w.id == savedId);
+                currentIndex = foundIndex !== -1 ? foundIndex : 0;
             } else {
-                document.getElementById('game-container').style.display = 'block';
-                document.getElementById('finish-msg').style.display = 'none';
                 currentIndex = 0;
-                renderCard();
+            }
+            
+            updateDisplay();
+        }
+        
+        /**
+         * Оновлення тексту на екрані та збереження закладки
+         */
+        function updateDisplay() {
+            if (words.length === 0) return;
+        
+            const currentWord = words[currentIndex];
+            
+            // Вивід на екран
+            engElement.innerText = currentWord.eng;
+            ukrElement.innerText = currentWord.ukr;
+            progressElement.innerText = `Слово ${currentIndex + 1} із ${words.length} (ID: ${currentWord.id})`;
+        
+            // Автоматичне збереження закладки (ID поточного слова)
+            localStorage.setItem('lastWordId', currentWord.id);
+        }
+        
+        /**
+         * Навігація: Наступне слово
+         */
+        function nextWord() {
+            if (currentIndex < words.length - 1) {
+                currentIndex++;
+                updateDisplay();
             }
         }
-
-        function renderCard() {
-            const cardElement = document.getElementById('card');
-            cardElement.classList.remove('is-flipped');
-
-            const item = filteredVocab[currentIndex];
-            document.getElementById('txt-eng').innerText = item.eng;
-            document.getElementById('txt-ukr').innerText = item.ukr;
-            
-            // Використовуємо loremflickr для стабільності
-            const img = document.getElementById('img-front');
-            img.src = `https://loremflickr.com/350/480/${encodeURIComponent(item.eng.split(' ')[0])}?random=${item.id}`;
-            
-            // Озвучуємо англійське слово відразу
-            speak(item.eng);
-        }
-
-        // Функція озвучування
-        function speak(text) {
-            if (synth.speaking) synth.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            utterance.rate = 0.9;
-            synth.speak(utterance);
-        }
-
-        function handleCardClick() {
-            const card = document.getElementById('card');
-            card.classList.toggle('is-flipped');
-            // Озвучуємо ще раз при натисканні, якщо картка повертається до англійської
-            if (!card.classList.contains('is-flipped')) {
-                speak(filteredVocab[currentIndex].eng);
+        
+        /**
+         * Навігація: Попереднє слово
+         */
+        function prevWord() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateDisplay();
             }
         }
-
-        function nextCard() {
-            currentIndex = (currentIndex + 1) % filteredVocab.length;
-            renderCard();
-        }
-
-        function markAsLearned() {
-            const currentItem = filteredVocab[currentIndex];
-            const learnedIds = JSON.parse(localStorage.getItem('learnedWords') || '[]');
-            learnedIds.push(currentItem.id);
-            localStorage.setItem('learnedWords', JSON.stringify(learnedIds));
-            
-            startApp(); // Перезавантажити список
-        }
-
+        
+        /**
+         * Скидання прогресу
+         */
         function resetProgress() {
-            localStorage.removeItem('learnedWords');
-            startApp();
+            if (confirm("Почати вивчення з першого слова?")) {
+                localStorage.removeItem('lastWordId');
+                currentIndex = 0;
+                updateDisplay();
+            }
         }
-
+        
         // Запуск при завантаженні сторінки
-        window.onload = loadData;
+        document.addEventListener('DOMContentLoaded', loadWords);
     </script>
 </body>
 </html>
