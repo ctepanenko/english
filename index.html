@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Cards</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --card-white: #ffffff;
+            --text-main: #2d3436;
+            --accent-blue: #0984e3;
+            --accent-green: #00b894;
+            --accent-orange: #fdcb6e;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Контейнер картки */
+        .scene {
+            width: 90vw;
+            max-width: 350px;
+            height: 480px;
+            perspective: 1000px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: var(--card-white);
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .card-face-back {
+            transform: rotateY(180deg);
+            background-color: #f1f9ff;
+        }
+
+        /* Зображення та текст */
+        .card-img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            background: #eee;
+        }
+
+        .word-eng {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .word-ukr {
+            font-size: 1.8rem;
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        /* Кнопка звуку */
+        .speaker-icon {
+            margin-top: 15px;
+            font-size: 2rem;
+            color: var(--accent-blue);
+        }
+
+        /* Кнопки керування */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .btn {
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn-learned { background-color: var(--accent-orange); }
+        .btn-next { background-color: var(--accent-green); }
+
+        .status-msg {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="scene">
+            <div class="card" id="card" onclick="handleCardClick()">
+                <div class="card-face card-face-front">
+                    <img id="img-front" src="" class="card-img" alt="loading...">
+                    <p id="txt-eng" class="word-eng"></p>
+                    <div class="speaker-icon">🔊</div>
+                </div>
+                <div class="card-face card-face-back">
+                    <p id="txt-ukr" class="word-ukr"></p>
+                    <p style="color: #95a5a6;">(натисніть, щоб повернути)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-learned" onclick="markAsLearned()">✔ Вивчено</button>
+            <button class="btn btn-next" onclick="nextCard()">Далі ➔</button>
+        </div>
+    </div>
+
+    <div id="finish-msg" class="status-msg">
+        <h2>🎉 Всі слова пройдено!</h2>
+        <button class="btn btn-next" onclick="resetProgress()" style="margin: 0 auto;">Почати спочатку</button>
+    </div>
+
+    <script>
+        let vocabulary = [];
+        let filteredVocab = [];
+        let currentIndex = 0;
+        const synth = window.speechSynthesis;
+
+        // 1. Завантаження даних з JSON
+        async function loadData() {
+            try {
+                const response = await fetch('words.json');
+                if (!response.ok) throw new Error('JSON не знайдено');
+                vocabulary = await response.json();
+                startApp();
+            } catch (err) {
+                alert('Помилка завантаження words.json. Перевірте файл.');
+                console.error(err);
+            }
+        }
+
+        function startApp() {
+            const learnedIds = JSON.parse(localStorage.getItem('learnedWords') || '[]');
+            filteredVocab = vocabulary.filter(w => !learnedIds.includes(w.id));
+
+            if (filteredVocab.length === 0) {
+                document.getElementById('game-container').style.display = 'none';
+                document.getElementById('finish-msg').style.display = 'block';
+            } else {
+                document.getElementById('game-container').style.display = 'block';
+                document.getElementById('finish-msg').style.display = 'none';
+                currentIndex = 0;
+                renderCard();
+            }
+        }
+
+        function renderCard() {
+            const cardElement = document.getElementById('card');
+            cardElement.classList.remove('is-flipped');
+
+            const item = filteredVocab[currentIndex];
+            document.getElementById('txt-eng').innerText = item.eng;
+            document.getElementById('txt-ukr').innerText = item.ukr;
+            
+            // Використовуємо loremflickr для стабільності
+            const img = document.getElementById('img-front');
+            img.src = `https://loremflickr.com/350/480/${encodeURIComponent(item.eng.split(' ')[0])}?random=${item.id}`;
+            
+            // Озвучуємо англійське слово відразу
+            speak(item.eng);
+        }
+
+        // Функція озвучування
+        function speak(text) {
+            if (synth.speaking) synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            synth.speak(utterance);
+        }
+
+        function handleCardClick() {
+            const card = document.getElementById('card');
+            card.classList.toggle('is-flipped');
+            // Озвучуємо ще раз при натисканні, якщо картка повертається до англійської
+            if (!card.classList.contains('is-flipped')) {
+                speak(filteredVocab[currentIndex].eng);
+            }
+        }
+
+        function nextCard() {
+            currentIndex = (currentIndex + 1) % filteredVocab.length;
+            renderCard();
+        }
+
+        function markAsLearned() {
+            const currentItem = filteredVocab[currentIndex];
+            const learnedIds = JSON.parse(localStorage.getItem('learnedWords') || '[]');
+            learnedIds.push(currentItem.id);
+            localStorage.setItem('learnedWords', JSON.stringify(learnedIds));
+            
+            startApp(); // Перезавантажити список
+        }
+
+        function resetProgress() {
+            localStorage.removeItem('learnedWords');
+            startApp();
+        }
+
+        // Запуск при завантаженні сторінки
+        window.onload = loadData;
+    </script>
+</body>
+</html>
